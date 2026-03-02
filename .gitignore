@@ -1,0 +1,21 @@
+# Android/Gradle
+.gradle/
+.gradle-local/
+.gradle-user-home/
+.kotlin/
+build/
+**/build/
+*.apk
+local.properties
+*.iml
+.idea/
+
+# Logs/Dumps/Temp
+*.log
+*.xml
+mcp_logs_launch.txt
+ui_probe.xml
+ui_dumps_*.xml
+captures/
+temp_build_error.log
+last_assemble_debug.log
