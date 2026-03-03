@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nav_calendar">ปฏิทิน</string>
+    <string name="nav_stats">สถิติ</string>
+    <string name="nav_home">รายการ</string>
+    <string name="nav_accounts">บัญชี</string>
+    <string name="nav_settings">ตั้งค่า</string>
+
+    <string name="cd_calendar">ดูปฏิทินรายการ</string>
+    <string name="cd_stats">ดูรายงานการเงิน</string>
+    <string name="cd_home">ดูประวัติรายการ</string>
+    <string name="cd_accounts">จัดการบัญชีของคุณ</string>
+    <string name="cd_settings">เปิดการตั้งค่าแอปพลิเคชัน</string>
+
+    <string name="settings_category_title">หมวดหมู่</string>
+    <string name="settings_category_desc">จัดการหมวดหมู่รายรับและรายจ่าย</string>
+    <string name="settings_export_title">ส่งออกข้อมูล</string>
+    <string name="settings_export_desc">ส่งออกประวัติรายการเป็นไฟล์ CSV</string>
+    <string name="settings_import_title">นำเข้าข้อมูล</string>
+    <string name="settings_import_desc">นำเข้าประวัติรายการจากไฟล์ CSV</string>
+    <string name="settings_language_title">ภาษา</string>
+    <string name="settings_language_desc">เปลี่ยนภาษาของแอปพลิเคชัน</string>
+    <string name="settings_theme_title">ธีม</string>
+    <string name="settings_theme_desc">เลือกธีมสว่าง มืด หรือตามระบบ</string>
+    <string name="settings_passcode_title">ล็อกรหัสผ่าน</string>
+    <string name="settings_passcode_desc">ปกป้องข้อมูลของคุณด้วยรหัส PIN</string>
+    <string name="settings_reset_title">ล้างข้อมูล</string>
+    <string name="settings_reset_desc">ลบข้อมูลและประวัติทั้งหมดถาวร</string>
+
+    <string name="account_form_title">เพิ่มบัญชีใหม่</string>
+    <string name="label_account_name">ชื่อบัญชี</string>
+    <string name="label_initial_balance">ยอดเงินเริ่มต้น</string>
+    <string name="label_account_type">ประเภทบัญชี</string>
+    <string name="label_select_icon">เลือกไอคอน</string>
+    <string name="label_select_color">เลือกสี</string>
+    <string name="btn_cancel">ยกเลิก</string>
+    <string name="btn_add">เพิ่ม</string>
+
+    <string name="account_type_cash">เงินสด</string>
+    <string name="account_type_bank">บัญชีธนาคาร</string>
+    <string name="account_type_credit">บัตรเครดิต</string>
+    <string name="account_type_wallet">วอลเล็ทอิเล็กทรอนิกส์</string>
+    <string name="account_type_invest">การลงทุน</string>
+    <string name="account_type_loan">เงินกู้ / หนี้สิน</string>
+    <string name="account_type_other">อื่นๆ</string>
+</resources>

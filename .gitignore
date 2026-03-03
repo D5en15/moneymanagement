@@ -19,3 +19,15 @@ ui_dumps_*.xml
 captures/
 temp_build_error.log
 last_assemble_debug.log
+
+# Exceptions to allow tracking essential Android XML resources
+!app/src/main/AndroidManifest.xml
+!app/src/main/res/values/*.xml
+!app/src/main/res/values-th/*.xml
+
+# Optional resource exceptions
+!app/src/main/res/xml/*.xml
+!app/src/main/res/mipmap*/**/*
+!app/src/main/res/drawable*/**/*
+!app/src/main/res/menu/*.xml
+!app/src/main/res/navigation/*.xml
