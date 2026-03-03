@@ -162,7 +162,7 @@ fun AccountsScreen(
     if (showAddDialog) {
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-                            title = { Text(stringResource(R.string.title_add_account)) },            text = {
+                            title = { Text(stringResource(R.string.account_form_title)) },            text = {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxWidth()
@@ -170,7 +170,7 @@ fun AccountsScreen(
                 OutlinedTextField(
                     value = newAccountName,
                     onValueChange = { viewModel.onNewAccountNameChanged(it) },
-                    label = { Text(stringResource(R.string.label_name)) },
+                    label = { Text(stringResource(R.string.label_account_name)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -189,7 +189,7 @@ fun AccountsScreen(
                         accountTypes = viewModel.accountTypes
                     )
 
-                    Text(stringResource(R.string.select_icon), style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.label_select_icon), style = MaterialTheme.typography.labelMedium)
                     val accountColor = selectedColor?.let { Color(it) } ?: MaterialTheme.colorScheme.primary
                     // Reduce height to prevent dialog overflow on small screens
                     Box(modifier = Modifier.height(140.dp)) {
@@ -200,7 +200,7 @@ fun AccountsScreen(
                         )
                     }
 
-                    Text(stringResource(R.string.select_color), style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.label_select_color), style = MaterialTheme.typography.labelMedium)
                     Box(modifier = Modifier.height(140.dp)) {
                         ColorPicker(
                             selectedColor = selectedColor,
@@ -634,14 +634,14 @@ fun AccountRow(
                     )
                     Text(
                         text = when(account.type) {
-                            "cash" -> stringResource(R.string.type_cash)
-                            "bank" -> stringResource(R.string.type_bank)
-                            "credit_card" -> stringResource(R.string.type_credit_card)
-                            "e_wallet" -> stringResource(R.string.type_e_wallet)
-                            "investment" -> stringResource(R.string.type_investment)
+                            "cash" -> stringResource(R.string.account_type_cash)
+                            "bank" -> stringResource(R.string.account_type_bank)
+                            "credit_card" -> stringResource(R.string.account_type_credit)
+                            "e_wallet" -> stringResource(R.string.account_type_wallet)
+                            "investment" -> stringResource(R.string.account_type_invest)
                             "digital_asset" -> stringResource(R.string.type_digital_asset)
-                            "loan" -> stringResource(R.string.type_loan)
-                            "others" -> stringResource(R.string.type_others)
+                            "loan" -> stringResource(R.string.account_type_loan)
+                            "others" -> stringResource(R.string.account_type_other)
                             else -> account.type.replaceFirstChar { it.uppercase() }
                         },
                         style = MaterialTheme.typography.bodyMedium,
@@ -680,14 +680,14 @@ fun AccountTypeDropdown(
     ) {
         OutlinedTextField(
             value = when(selectedType) {
-                "cash" -> stringResource(R.string.type_cash)
-                "bank" -> stringResource(R.string.type_bank)
-                "credit_card" -> stringResource(R.string.type_credit_card)
-                "e_wallet" -> stringResource(R.string.type_e_wallet)
-                "investment" -> stringResource(R.string.type_investment)
+                "cash" -> stringResource(R.string.account_type_cash)
+                "bank" -> stringResource(R.string.account_type_bank)
+                "credit_card" -> stringResource(R.string.account_type_credit)
+                "e_wallet" -> stringResource(R.string.account_type_wallet)
+                "investment" -> stringResource(R.string.account_type_invest)
                 "digital_asset" -> stringResource(R.string.type_digital_asset)
-                "loan" -> stringResource(R.string.type_loan)
-                "others" -> stringResource(R.string.type_others)
+                "loan" -> stringResource(R.string.account_type_loan)
+                "others" -> stringResource(R.string.account_type_other)
                 else -> selectedType
             },
             onValueChange = {},
@@ -706,14 +706,14 @@ fun AccountTypeDropdown(
                 DropdownMenuItem(
                     text = {
                         Text(text = when(type) {
-                            "cash" -> stringResource(R.string.type_cash)
-                            "bank" -> stringResource(R.string.type_bank)
-                            "credit_card" -> stringResource(R.string.type_credit_card)
-                            "e_wallet" -> stringResource(R.string.type_e_wallet)
-                            "investment" -> stringResource(R.string.type_investment)
+                            "cash" -> stringResource(R.string.account_type_cash)
+                            "bank" -> stringResource(R.string.account_type_bank)
+                            "credit_card" -> stringResource(R.string.account_type_credit)
+                            "e_wallet" -> stringResource(R.string.account_type_wallet)
+                            "investment" -> stringResource(R.string.account_type_invest)
                             "digital_asset" -> stringResource(R.string.type_digital_asset)
-                            "loan" -> stringResource(R.string.type_loan)
-                            "others" -> stringResource(R.string.type_others)
+                            "loan" -> stringResource(R.string.account_type_loan)
+                            "others" -> stringResource(R.string.account_type_other)
                             else -> type
                         })
                     },

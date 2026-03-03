@@ -42,12 +42,26 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.moneymanager.ui.screens.calendar.CalendarViewModel
 
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
+    val calendarViewModel: CalendarViewModel = hiltViewModel()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+
+    fun navigateToRoot(route: String, resetCalendarTransientState: Boolean = false) {
+        if (resetCalendarTransientState) {
+            calendarViewModel.resetTransientUi()
+        }
+        navController.navigate(route) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = false }
+            launchSingleTop = true
+            restoreState = false
+        }
+    }
 
     Scaffold(
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
@@ -70,11 +84,10 @@ fun MainScreen() {
                         if (isHome) {
                             androidx.compose.material3.Surface(
                                 onClick = {
-                                    navController.navigate(screen.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
+                                    navigateToRoot(
+                                        route = screen.route,
+                                        resetCalendarTransientState = screen.route == MoneyManagerDestination.Calendar.route
+                                    )
                                 },
                                 shape = CircleShape,
                                 color = MaterialTheme.colorScheme.primary,
@@ -84,7 +97,7 @@ fun MainScreen() {
                                 Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
                                     Icon(
                                         imageVector = screen.icon,
-                                        contentDescription = stringResource(screen.title),
+                                        contentDescription = stringResource(screen.contentDescription),
                                         tint = MaterialTheme.colorScheme.onPrimary,
                                         modifier = Modifier.size(32.dp)
                                     )
@@ -95,11 +108,10 @@ fun MainScreen() {
                                 screen = screen,
                                 isSelected = isSelected,
                                 onClick = {
-                                    navController.navigate(screen.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
+                                    navigateToRoot(
+                                        route = screen.route,
+                                        resetCalendarTransientState = screen.route == MoneyManagerDestination.Calendar.route
+                                    )
                                 }
                             )
                         }
@@ -141,6 +153,7 @@ fun MainScreen() {
                 }
                 composable(MoneyManagerDestination.Calendar.route) {
                     CalendarScreen(
+                        viewModel = calendarViewModel,
                         onDayLongPress = { date ->
                             val dateTimestamp = date.time
                             navController.navigate(MoneyManagerDestination.AddTransaction.route + "?date=$dateTimestamp")
@@ -219,7 +232,7 @@ fun CustomNavBarItem(
         ) {
             Icon(
                 imageVector = screen.icon,
-                contentDescription = stringResource(screen.title),
+                contentDescription = stringResource(screen.contentDescription),
                 tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(24.dp)
             )

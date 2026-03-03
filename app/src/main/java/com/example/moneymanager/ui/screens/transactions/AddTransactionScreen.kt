@@ -107,8 +107,8 @@ fun AddTransactionScreen(
     if (showDeleteDialog) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text(stringResource(R.string.delete_transaction_title)) },
-            text = { Text(stringResource(R.string.delete_transaction_confirm)) },
+            title = { Text(stringResource(R.string.dialog_delete_title)) },
+            text = { Text(stringResource(R.string.dialog_delete_message)) },
             confirmButton = {
                 androidx.compose.material3.TextButton(
                     onClick = {
@@ -144,12 +144,12 @@ fun AddTransactionScreen(
                         if (isEditMode) 
                             stringResource(R.string.title_edit_transaction) + " ($typeName)"
                         else 
-                            typeName
+                            stringResource(R.string.title_add_transaction)
                     ) 
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back_cd))
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 actions = {

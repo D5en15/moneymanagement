@@ -233,36 +233,36 @@ fun SettingsScreen(
         ) {
             SettingsItem(
                 icon = Icons.Default.Category,
-                title = stringResource(R.string.cat_mgmt_title),
-                subtitle = stringResource(R.string.cat_mgmt_desc),
+                title = stringResource(R.string.settings_category_title),
+                subtitle = stringResource(R.string.settings_category_desc),
                 onClick = onManageCategoriesClick
             )
             Divider()
             SettingsItem(
                 icon = Icons.Default.FileDownload,
-                title = stringResource(R.string.export_csv_title),
-                subtitle = stringResource(R.string.export_csv_desc),
+                title = stringResource(R.string.settings_export_title),
+                subtitle = stringResource(R.string.settings_export_desc),
                 onClick = { viewModel.exportToCsv(context) }
             )
             Divider()
             SettingsItem(
                 icon = Icons.Default.FileUpload,
-                title = stringResource(R.string.settings_import_csv),
-                subtitle = stringResource(R.string.settings_import_csv_desc),
+                title = stringResource(R.string.settings_import_title),
+                subtitle = stringResource(R.string.settings_import_desc),
                 onClick = { csvPickerLauncher.launch(arrayOf("text/csv", "text/plain")) }
             )
             Divider()
             SettingsItem(
                 icon = Icons.Default.Language,
-                title = stringResource(R.string.language_title),
-                subtitle = stringResource(R.string.language_desc),
+                title = stringResource(R.string.settings_language_title),
+                subtitle = stringResource(R.string.settings_language_desc),
                 onClick = { showLanguageDialog = true }
             )
             Divider()
             SettingsItem(
                 icon = Icons.Default.Palette,
-                title = stringResource(R.string.theme_title),
-                subtitle = stringResource(R.string.theme_desc),
+                title = stringResource(R.string.settings_theme_title),
+                subtitle = stringResource(R.string.settings_theme_desc),
                 onClick = { showThemeDialog = true }
             )
             Divider()
@@ -271,8 +271,8 @@ fun SettingsScreen(
                     if (isPasscodeEnabled) viewModel.disablePasscode() else showPasscodeSetup = true 
                 },
                 leadingContent = { Icon(Icons.Default.Lock, contentDescription = null) },
-                headlineContent = { Text(stringResource(R.string.passcode_lock_title)) },
-                supportingContent = { Text(stringResource(R.string.passcode_lock_desc)) },
+                headlineContent = { Text(stringResource(R.string.settings_passcode_title)) },
+                supportingContent = { Text(stringResource(R.string.settings_passcode_desc)) },
                 trailingContent = {
                     Switch(
                         checked = isPasscodeEnabled,
@@ -285,8 +285,8 @@ fun SettingsScreen(
             Divider()
             SettingsItem(
                 icon = Icons.Default.DeleteForever,
-                title = stringResource(R.string.reset_data_title),
-                subtitle = stringResource(R.string.reset_data_desc),
+                title = stringResource(R.string.settings_reset_title),
+                subtitle = stringResource(R.string.settings_reset_desc),
                 onClick = { showResetDialog = true }
             )
         }
@@ -307,5 +307,4 @@ fun SettingsItem(
         supportingContent = { Text(subtitle) }
     )
 }
-
 

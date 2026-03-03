@@ -44,9 +44,10 @@ data class CalendarDayUi(
 data class CalendarTransactionDisplay(
     val id: Int,
     val amount: Double,
-    val type: String,
-    val note: String?,
-    val categoryId: Int?,
+    val title: String,
+    val accountName: String,
+    val iconName: String?,
+    val isExpense: Boolean,
     val timeMillis: Long
 )
 
@@ -76,6 +77,13 @@ private data class TransactionsSignature(
     val checksum: Long
 )
 
+private data class SelectionSnapshot(
+    val selectionMode: CalendarSelectionMode,
+    val selectedDayMillis: Long?,
+    val selectedDayMillisSet: Set<Long>,
+    val isSheetOpen: Boolean
+)
+
 private data class MonthComputedState(
     val month: YearMonth,
     val signature: TransactionsSignature,
@@ -102,6 +110,29 @@ class CalendarViewModel @Inject constructor(
     private val _selectedDayMillisSet = MutableStateFlow<Set<Long>>(emptySet())
     private val _isSheetOpen = MutableStateFlow(false)
 
+    private val selectionSnapshotFlow: StateFlow<SelectionSnapshot> = combine(
+        _selectionMode,
+        _selectedDayMillis,
+        _selectedDayMillisSet,
+        _isSheetOpen
+    ) { selectionMode, selectedDayMillis, selectedDayMillisSet, isSheetOpen ->
+        SelectionSnapshot(
+            selectionMode = selectionMode,
+            selectedDayMillis = selectedDayMillis,
+            selectedDayMillisSet = selectedDayMillisSet,
+            isSheetOpen = isSheetOpen
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = SelectionSnapshot(
+            selectionMode = CalendarSelectionMode.NONE,
+            selectedDayMillis = null,
+            selectedDayMillisSet = emptySet(),
+            isSheetOpen = false
+        )
+    )
+
     private val monthComputedState: StateFlow<MonthComputedState> = _currentMonth.flatMapLatest { month ->
         val monthRange = monthRangeForGrid(month)
         repository.getTransactionsByDateRange(monthRange.gridStartMillis, monthRange.gridEndMillis)
@@ -118,26 +149,33 @@ class CalendarViewModel @Inject constructor(
 
     val uiState: StateFlow<CalendarUiState> = combine(
         monthComputedState,
-        _selectionMode,
-        _selectedDayMillis,
-        _selectedDayMillisSet,
-        _isSheetOpen
-    ) { monthState, selectionMode, selectedDayMillis, selectedDayMillisSet, isSheetOpen ->
-        val effectiveSelectedDays = when (selectionMode) {
-            CalendarSelectionMode.NONE -> selectedDayMillis?.let { setOf(it) }.orEmpty()
-            CalendarSelectionMode.MULTI -> selectedDayMillisSet
+        repository.getAllAccounts(),
+        repository.getAllCategories(),
+        selectionSnapshotFlow
+    ) { monthState, accounts, categories, selectionSnapshot ->
+        val accountMap = accounts.associateBy { it.id }
+        val categoryMap = categories.associateBy { it.id }
+
+        val effectiveSelectedDays = when (selectionSnapshot.selectionMode) {
+            CalendarSelectionMode.NONE -> selectionSnapshot.selectedDayMillis?.let { setOf(it) }.orEmpty()
+            CalendarSelectionMode.MULTI -> selectionSnapshot.selectedDayMillisSet
         }
 
         val selectedTransactions = effectiveSelectedDays
             .flatMap { dayStart -> monthState.transactionsByDay[dayStart].orEmpty() }
             .sortedByDescending { it.date }
             .map { tx ->
+                val category = tx.categoryId?.let { categoryMap[it] }
+                val isExpense = tx.type == "expense"
                 CalendarTransactionDisplay(
                     id = tx.id,
                     amount = tx.amount,
-                    type = tx.type,
-                    note = tx.note,
-                    categoryId = tx.categoryId,
+                    title = tx.note?.takeIf { it.isNotBlank() }
+                        ?: category?.name
+                        ?: tx.type.replaceFirstChar { it.uppercase() },
+                    accountName = accountMap[tx.accountId]?.name ?: "Unknown",
+                    iconName = if (tx.type == "transfer") "sync_alt" else category?.icon,
+                    isExpense = isExpense,
                     timeMillis = tx.time
                 )
             }
@@ -154,11 +192,11 @@ class CalendarViewModel @Inject constructor(
         CalendarUiState(
             month = monthState.month,
             days = monthState.days,
-            selectionMode = selectionMode,
-            selectedDayMillis = selectedDayMillis,
-            selectedDayMillisSet = selectedDayMillisSet,
+            selectionMode = selectionSnapshot.selectionMode,
+            selectedDayMillis = selectionSnapshot.selectedDayMillis,
+            selectedDayMillisSet = selectionSnapshot.selectedDayMillisSet,
             selectedDaysCount = effectiveSelectedDays.size,
-            isSheetVisible = isSheetOpen && effectiveSelectedDays.isNotEmpty(),
+            isSheetVisible = selectionSnapshot.isSheetOpen && effectiveSelectedDays.isNotEmpty(),
             selectedDayTransactions = selectedTransactions,
             selectedDaySummary = selectedSummary,
             totalIncome = monthState.totalIncome,
@@ -190,7 +228,8 @@ class CalendarViewModel @Inject constructor(
 
     fun onGoToToday() {
         val now = System.currentTimeMillis()
-        _currentMonth.value = yearMonthFromDate(Date(now))
+        val todayMonth = yearMonthFromDate(Date(now))
+        setMonth(todayMonth)
         _selectionMode.value = CalendarSelectionMode.NONE
         _selectedDayMillisSet.value = emptySet()
         _selectedDayMillis.value = startOfDayMillis(now)
@@ -208,6 +247,23 @@ class CalendarViewModel @Inject constructor(
             _isSheetOpen.value = false
             CalendarSelectionMode.MULTI
         }
+    }
+
+    fun onConfirmMultiSelection() {
+        if (_selectionMode.value == CalendarSelectionMode.MULTI && _selectedDayMillisSet.value.isNotEmpty()) {
+            _isSheetOpen.value = true
+        }
+    }
+
+    fun closeSheet() {
+        _isSheetOpen.value = false
+    }
+
+    fun resetTransientUi() {
+        _selectionMode.value = CalendarSelectionMode.NONE
+        _selectedDayMillisSet.value = emptySet()
+        _selectedDayMillis.value = null
+        _isSheetOpen.value = false
     }
 
     fun onDayClick(dayStartMillis: Long) {

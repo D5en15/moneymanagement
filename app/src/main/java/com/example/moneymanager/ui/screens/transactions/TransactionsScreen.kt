@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.moneymanager.R
 import com.example.moneymanager.ui.components.timeline.TimelineHeader
+import com.example.moneymanager.ui.components.TransactionListItem
 import com.example.moneymanager.ui.theme.ErrorRed
 import com.example.moneymanager.ui.theme.SuccessGreen
 import com.example.moneymanager.utils.IconUtils
@@ -141,7 +142,7 @@ fun TransactionsScreen(
                 onClick = { showAddMenu = true },
                 containerColor = MaterialTheme.colorScheme.primary, // Primary Gradient base
                 contentColor = MaterialTheme.colorScheme.onPrimary,
-                icon = { Icon(Icons.Filled.Add, stringResource(R.string.add_transaction_cd)) },
+                icon = { Icon(Icons.Filled.Add, stringResource(R.string.cd_add_transaction)) },
                 text = { Text(text = stringResource(R.string.add_btn)) },
             )
         }
@@ -226,11 +227,11 @@ fun TransactionsScreen(
                         items = transactions,
                         key = { transaction -> "${transaction.id}_${transaction.date}" }
                     ) { transaction ->
-                        TransactionItem(
+                        TransactionListItem(
                             id = transaction.id,
                             title = transaction.note?.takeIf { it.isNotBlank() } ?: transaction.categoryName,
                             account = transaction.accountName,
-                            amount = (if (transaction.isExpense) "-" else "+") + formatAmount(transaction.amount),
+                            amount = transaction.amount,
                             iconName = transaction.iconName,
                             isExpense = transaction.isExpense,
                             onClick = { onTransactionClick(transaction.id) }
@@ -259,71 +260,4 @@ fun WeekHeader(label: String) {
             color = MaterialTheme.colorScheme.secondary
         )
     }
-}
-
-@Composable
-fun TransactionItem(
-    id: Int,
-    title: String,
-    account: String,
-    amount: String,
-    iconName: String?,
-    isExpense: Boolean,
-    onClick: () -> Unit
-) {
-    // "Cards (stat cards / list items): Use card surface rgba(255,255,255,0.78)"
-    ListItem(
-        modifier = Modifier
-            .padding(vertical = 4.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surface) // Glassy surface from theme
-            .border(width = 1.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha=0.3f), shape = RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .semantics { contentDescription = "transaction_$id" },
-        colors = ListItemDefaults.colors(
-            containerColor = Color.Transparent // We set background above
-        ),
-        headlineContent = { 
-            Text(
-                title, 
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            ) 
-        },
-        supportingContent = { 
-            Text(
-                account,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            ) 
-        },
-        leadingContent = {
-            // Icon background bubble
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = IconUtils.getIconByName(iconName),
-                    contentDescription = "Icon",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        },
-        trailingContent = {
-            Text(
-                text = amount,
-                color = if (isExpense) ErrorRed else SuccessGreen,
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.bodyLarge
-            )
-        }
-    )
-}
-
-fun formatAmount(amount: Double): String {
-    return "\u0E3F" + String.format("%,.2f", amount)
 }

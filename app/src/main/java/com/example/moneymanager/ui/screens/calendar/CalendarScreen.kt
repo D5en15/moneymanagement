@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -70,8 +71,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.moneymanager.R
+import com.example.moneymanager.ui.components.TransactionListItem
 import com.example.moneymanager.ui.theme.ErrorRed
 import com.example.moneymanager.ui.theme.SuccessGreen
 import com.example.moneymanager.utils.formatMoneyCompact
@@ -80,6 +83,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -96,7 +100,7 @@ fun CalendarScreen(
     var showDatePicker by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
-    val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     val baseMonth = remember { YearMonth.now() }
     val startPage = remember { Int.MAX_VALUE / 2 }
@@ -144,7 +148,13 @@ fun CalendarScreen(
 
     if (uiState.isSheetVisible) {
         ModalBottomSheet(
-            onDismissRequest = { viewModel.clearSelectedDate() },
+            onDismissRequest = {
+                if (uiState.selectionMode == CalendarSelectionMode.MULTI) {
+                    viewModel.closeSheet()
+                } else {
+                    viewModel.clearSelectedDate()
+                }
+            },
             sheetState = bottomSheetState,
             windowInsets = WindowInsets(0, 0, 0, 0)
         ) {
@@ -158,7 +168,15 @@ fun CalendarScreen(
                 title = sheetTitle,
                 transactions = uiState.selectedDayTransactions,
                 summary = uiState.selectedDaySummary,
-                onDismiss = { viewModel.clearSelectedDate() }
+                selectionMode = uiState.selectionMode,
+                selectedDays = uiState.selectedDayMillisSet,
+                onDismiss = {
+                    if (uiState.selectionMode == CalendarSelectionMode.MULTI) {
+                        viewModel.closeSheet()
+                    } else {
+                        viewModel.clearSelectedDate()
+                    }
+                }
             )
         }
     }
@@ -174,7 +192,17 @@ fun CalendarScreen(
                     isSelectionMode = uiState.selectionMode == CalendarSelectionMode.MULTI,
                     onHeaderClick = { showDatePicker = true },
                     onGoToToday = { viewModel.onGoToToday() },
-                    onToggleSelectionMode = { viewModel.onToggleSelectionMode() },
+                    onToggleSelectionMode = {
+                        if (uiState.selectionMode == CalendarSelectionMode.MULTI) {
+                            if (uiState.selectedDaysCount > 0) {
+                                viewModel.onConfirmMultiSelection()
+                            } else {
+                                viewModel.onToggleSelectionMode()
+                            }
+                        } else {
+                            viewModel.onToggleSelectionMode()
+                        }
+                    },
                     onClearSelection = { viewModel.onClearSelection() }
                 )
             }
@@ -185,17 +213,10 @@ fun CalendarScreen(
                 .padding(innerPadding)
                 .fillMaxSize()
         ) {
-            val hasSelection = uiState.selectedDaysCount > 0
-            val summaryIncome = if (hasSelection) uiState.selectedDaySummary.income else uiState.totalIncome
-            val summaryExpense = if (hasSelection) uiState.selectedDaySummary.expense else uiState.totalExpense
-            val summaryBalance = if (hasSelection) uiState.selectedDaySummary.balance else uiState.totalBalance
-
             CalendarSummaryRow(
-                income = summaryIncome,
-                expense = summaryExpense,
-                balance = summaryBalance,
-                hasSelection = hasSelection,
-                onClearSelection = viewModel::onClearSelection
+                income = uiState.totalIncome,
+                expense = uiState.totalExpense,
+                balance = uiState.totalBalance
             )
 
             Divider(modifier = Modifier.padding(top = 4.dp))
@@ -254,11 +275,10 @@ fun CalendarScreen(
 private fun CalendarSummaryRow(
     income: Double,
     expense: Double,
-    balance: Double,
-    hasSelection: Boolean,
-    onClearSelection: () -> Unit
+    balance: Double
 ) {
     val locale = remember { Locale.getDefault() }
+    val summaryValueStyle = MaterialTheme.typography.titleMedium
 
     Row(
         modifier = Modifier
@@ -273,31 +293,20 @@ private fun CalendarSummaryRow(
             SummaryColumn(
                 label = stringResource(R.string.label_income),
                 valueText = "\u0E3F" + formatMoneyCompact(income, locale),
-                valueStyle = MaterialTheme.typography.titleSmall,
+                valueStyle = summaryValueStyle,
                 valueColor = SuccessGreen
             )
             SummaryColumn(
                 label = stringResource(R.string.label_expense),
                 valueText = "\u0E3F" + formatMoneyCompact(expense, locale),
-                valueStyle = MaterialTheme.typography.titleSmall,
+                valueStyle = summaryValueStyle,
                 valueColor = ErrorRed
             )
             SummaryColumn(
                 label = stringResource(R.string.stats_net),
                 valueText = "\u0E3F" + formatMoneyCompact(balance, locale),
-                valueStyle = MaterialTheme.typography.titleMedium,
+                valueStyle = summaryValueStyle,
                 valueColor = if (balance >= 0) SuccessGreen else ErrorRed
-            )
-        }
-        if (hasSelection) {
-            Text(
-                text = stringResource(R.string.calendar_clear_selection),
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .clickable(onClick = onClearSelection)
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary
             )
         }
     }
@@ -321,7 +330,7 @@ private fun RowScope.SummaryColumn(
         )
         Text(
             text = valueText,
-            style = valueStyle,
+            style = valueStyle.copy(fontSize = 18.sp),
             fontWeight = FontWeight.Bold,
             color = valueColor
         )
@@ -362,7 +371,6 @@ fun CalendarMonthPage(
     }
 }
 
-@Suppress("UNUSED_PARAMETER")
 @Composable
 fun CalendarHeader(
     currentMonth: YearMonth,
@@ -376,6 +384,7 @@ fun CalendarHeader(
 ) {
     val locale = remember { Locale.getDefault() }
     val dateFormat = remember(locale) { java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", locale) }
+    val isCurrentMonth = currentMonth == YearMonth.now()
 
     Row(
         modifier = Modifier
@@ -402,16 +411,29 @@ fun CalendarHeader(
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = stringResource(R.string.calendar_today),
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(onClick = onGoToToday)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
+            if (!isSelectionMode && !isCurrentMonth) {
+                Text(
+                    text = stringResource(R.string.calendar_today),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(onClick = onGoToToday)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            if (isSelectionMode && selectedDaysCount > 0) {
+                Text(
+                    text = stringResource(R.string.calendar_clear_selection),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(onClick = onClearSelection)
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
             IconButton(onClick = onToggleSelectionMode) {
                 Icon(
                     imageVector = if (isSelectionMode) Icons.Default.CheckCircle else Icons.Default.Checklist,
@@ -505,12 +527,10 @@ fun CalendarDayCell(
             )
         }
 
-        Spacer(modifier = Modifier.height(46.dp))
-        
-        if (day.isInMonth) {
+        if (day.isInMonth && (day.summary.income > 0 || day.summary.expense > 0)) {
+            Spacer(modifier = Modifier.height(4.dp))
             Row(
-                horizontalArrangement = Arrangement.spacedBy(3.dp),
-                modifier = Modifier.height(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(3.dp)
             ) {
                 if (day.summary.income > 0) {
                     Box(modifier = Modifier.size(4.dp).clip(CircleShape).background(SuccessGreen))
@@ -528,11 +548,22 @@ fun DailyTransactionsSheet(
     title: String,
     transactions: List<CalendarTransactionDisplay>,
     summary: DaySummary,
+    selectionMode: CalendarSelectionMode,
+    selectedDays: Set<Long>,
     onDismiss: () -> Unit
 ) {
     val locale = remember { Locale.getDefault() }
+    val dayFormatter = remember(locale) { SimpleDateFormat("EEEE, d MMMM yyyy", locale) }
 
-    Column(modifier = Modifier.padding(16.dp)) {
+    val sheetContentModifier = if (selectionMode == CalendarSelectionMode.MULTI) {
+        Modifier
+            .fillMaxHeight(0.58f)
+            .padding(16.dp)
+    } else {
+        Modifier.padding(16.dp)
+    }
+
+    Column(modifier = sheetContentModifier) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge,
@@ -543,7 +574,10 @@ fun DailyTransactionsSheet(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Text(text = stringResource(R.string.label_income), style = MaterialTheme.typography.labelMedium)
                 Text(
                     text = "\u0E3F" + formatMoneyCompact(summary.income, locale),
@@ -552,11 +586,26 @@ fun DailyTransactionsSheet(
                     fontWeight = FontWeight.SemiBold
                 )
             }
-             Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Text(text = stringResource(R.string.label_expense), style = MaterialTheme.typography.labelMedium)
                 Text(
                     text = "\u0E3F" + formatMoneyCompact(summary.expense, locale),
                     color = ErrorRed,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(text = stringResource(R.string.stats_net), style = MaterialTheme.typography.labelMedium)
+                Text(
+                    text = "\u0E3F" + formatMoneyCompact(summary.balance, locale),
+                    color = if (summary.balance >= 0) SuccessGreen else ErrorRed,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -572,9 +621,55 @@ fun DailyTransactionsSheet(
                 Text(stringResource(R.string.info_no_transactions_on_this_day), style = MaterialTheme.typography.bodyMedium)
             }
         } else {
-            LazyColumn {
-                items(items = transactions, key = { it.id }) { transaction ->
-                    TransactionRow(transaction = transaction)
+            if (selectionMode == CalendarSelectionMode.MULTI) {
+                val transactionsByDay = transactions.groupBy { startOfDayMillis(it.timeMillis) }
+                val orderedDays = selectedDays.toList().sortedDescending()
+
+                LazyColumn {
+                    items(items = orderedDays, key = { dayStart -> dayStart }) { dayStart ->
+                        val dayTransactions = transactionsByDay[dayStart].orEmpty()
+
+                        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+                            Text(
+                                text = dayFormatter.format(Date(dayStart)),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 6.dp)
+                            )
+
+                            if (dayTransactions.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.info_no_transactions_on_this_day),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(vertical = 6.dp)
+                                )
+                            } else {
+                                dayTransactions.forEach { transaction ->
+                                    TransactionListItem(
+                                        id = transaction.id,
+                                        title = transaction.title,
+                                        account = transaction.accountName,
+                                        amount = transaction.amount,
+                                        iconName = transaction.iconName,
+                                        isExpense = transaction.isExpense
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                LazyColumn {
+                    items(items = transactions, key = { it.id }) { transaction ->
+                        TransactionListItem(
+                            id = transaction.id,
+                            title = transaction.title,
+                            account = transaction.accountName,
+                            amount = transaction.amount,
+                            iconName = transaction.iconName,
+                            isExpense = transaction.isExpense
+                        )
+                    }
                 }
             }
         }
@@ -584,6 +679,16 @@ fun DailyTransactionsSheet(
             Text(stringResource(R.string.btn_close))
         }
     }
+}
+
+private fun startOfDayMillis(timeMillis: Long): Long {
+    val calendar = Calendar.getInstance()
+    calendar.timeInMillis = timeMillis
+    calendar.set(Calendar.HOUR_OF_DAY, 0)
+    calendar.set(Calendar.MINUTE, 0)
+    calendar.set(Calendar.SECOND, 0)
+    calendar.set(Calendar.MILLISECOND, 0)
+    return calendar.timeInMillis
 }
 
 @Composable

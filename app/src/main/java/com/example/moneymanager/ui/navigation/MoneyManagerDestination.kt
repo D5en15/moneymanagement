@@ -14,36 +14,42 @@ import com.example.moneymanager.R
 sealed class MoneyManagerDestination(
     val route: String,
     val title: Int,
-    val icon: ImageVector
+    val icon: ImageVector,
+    val contentDescription: Int = title
 ) {
     data object Calendar : MoneyManagerDestination(
         route = "calendar_view",
         title = R.string.nav_calendar,
-        icon = Icons.Default.CalendarMonth
+        icon = Icons.Default.CalendarMonth,
+        contentDescription = R.string.cd_calendar
     )
 
     data object Stats : MoneyManagerDestination(
         route = "stats",
         title = R.string.nav_stats,
-        icon = Icons.Default.Assessment
+        icon = Icons.Default.Assessment,
+        contentDescription = R.string.cd_stats
     )
 
     data object Home : MoneyManagerDestination(
         route = "home",
         title = R.string.nav_home,
-        icon = Icons.Default.Home
+        icon = Icons.Default.Home,
+        contentDescription = R.string.cd_home
     )
 
     data object Accounts : MoneyManagerDestination(
         route = "accounts",
         title = R.string.nav_accounts,
-        icon = Icons.Default.AccountBalance
+        icon = Icons.Default.AccountBalance,
+        contentDescription = R.string.cd_accounts
     )
 
     data object Settings : MoneyManagerDestination(
         route = "settings",
         title = R.string.nav_settings,
-        icon = Icons.Default.Settings
+        icon = Icons.Default.Settings,
+        contentDescription = R.string.cd_settings
     )
 
     data object AddTransaction : MoneyManagerDestination(

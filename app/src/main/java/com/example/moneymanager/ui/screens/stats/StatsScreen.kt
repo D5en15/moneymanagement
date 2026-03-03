@@ -2,6 +2,7 @@ package com.example.moneymanager.ui.screens.stats
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,18 +31,14 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.TextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
@@ -65,6 +64,9 @@ import java.util.Locale
 import com.example.moneymanager.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.WindowInsets
+import com.example.moneymanager.ui.theme.DarkBackground
+import com.example.moneymanager.ui.theme.DarkTopGradientColors
+import com.example.moneymanager.ui.theme.LightTopGradientColors
 import com.example.moneymanager.utils.formatMoneyCompact
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,135 +81,172 @@ fun StatsScreen(
     
     var showPeriodSheet by remember { mutableStateOf(false) }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.nav_stats)) }
-            )
+    LaunchedEffect(uiState.selectedMode) {
+        if (uiState.selectedMode == StatsMode.NET) {
+            viewModel.setMode(StatsMode.EXPENSE)
         }
+    }
+
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
+    val bgBrush = if (isDark) {
+        Brush.verticalGradient(DarkTopGradientColors, startY = 0f, endY = 800f)
+    } else {
+        Brush.verticalGradient(LightTopGradientColors, startY = 0f, endY = 800f)
+    }
+
+    Scaffold(
+        containerColor = Color.Transparent,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { innerPadding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .background(bgBrush)
                 .padding(innerPadding)
         ) {
-            // Filter Header
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                // Period Selector
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Header
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { showPeriodSheet = true }
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                        .statusBarsPadding()
+                        .padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 12.dp),
+                    horizontalArrangement = Arrangement.Start,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = when(uiState.selectedPeriod) {
-                            DatePeriod.THIS_MONTH -> stringResource(R.string.stats_this_month)
-                            DatePeriod.LAST_MONTH -> stringResource(R.string.stats_last_month)
-                            DatePeriod.CUSTOM -> stringResource(R.string.stats_custom_range)
-                        },
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        text = stringResource(R.string.nav_stats),
+                        style = MaterialTheme.typography.displaySmall,
+                        color = MaterialTheme.colorScheme.onBackground
                     )
-                    Icon(Icons.Default.ArrowDropDown, contentDescription = "Select Period")
                 }
 
-                // Mode Selector
-                var expanded by remember { mutableStateOf(false) }
-
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = !expanded },
-                    modifier = Modifier.fillMaxWidth()
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    TextField(
-                        value = when (uiState.selectedMode) {
-                            StatsMode.INCOME -> stringResource(R.string.label_income)
-                            StatsMode.EXPENSE -> stringResource(R.string.label_expense)
-                            StatsMode.NET -> stringResource(R.string.stats_net)
-                        },
-                        onValueChange = {},
-                        readOnly = true,
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(
-                                expanded = expanded
-                            )
-                        },
-                        colors = ExposedDropdownMenuDefaults.textFieldColors(),
-                        modifier = Modifier.menuAnchor()
-                    )
-
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        StatsMode.values().forEach { mode ->
-                            DropdownMenuItem(
-                                text = {
-                                    val label = when (mode) {
-                                        StatsMode.INCOME -> stringResource(R.string.label_income)
-                                        StatsMode.EXPENSE -> stringResource(R.string.label_expense)
-                                        StatsMode.NET -> stringResource(R.string.stats_net)
-                                    }
-                                    Text(text = label)
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showPeriodSheet = true }
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = when (uiState.selectedPeriod) {
+                                    DatePeriod.THIS_MONTH -> stringResource(R.string.stats_this_month)
+                                    DatePeriod.LAST_MONTH -> stringResource(R.string.stats_last_month)
+                                    DatePeriod.CUSTOM -> stringResource(R.string.stats_custom_range)
                                 },
-                                onClick = {
-                                    viewModel.setMode(mode)
-                                    expanded = false
-                                }
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
                             )
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = "Select Period")
+                        }
+                    }
+
+                    item {
+                        when {
+                            uiState.isLoading -> {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 48.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            }
+
+                            uiState.totalIncome == 0.0 && uiState.totalExpense == 0.0 -> {
+                                EmptyState(onAddTransaction = onNavigateToAddTransaction)
+                            }
+
+                            else -> {
+                                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    SummaryCards(uiState)
+
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 8.dp)
+                                    ) {
+                                        Text(
+                                            text = "สรุปรายละเอียด",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                        ) {
+                                            listOf(
+                                                StatsMode.INCOME to stringResource(R.string.label_income),
+                                                StatsMode.EXPENSE to stringResource(R.string.label_expense)
+                                            ).forEach { (mode, label) ->
+                                                val isSelected = uiState.selectedMode == mode
+                                                Row(
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .clickable { viewModel.setMode(mode) }
+                                                        .padding(vertical = 6.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(18.dp)
+                                                            .border(
+                                                                width = 2.dp,
+                                                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                shape = CircleShape
+                                                            ),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        if (isSelected) {
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .size(10.dp)
+                                                                    .background(
+                                                                        MaterialTheme.colorScheme.primary,
+                                                                        CircleShape
+                                                                    )
+                                                            )
+                                                        }
+                                                    }
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text(
+                                                        text = label,
+                                                        color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    if (uiState.categoryStats.isNotEmpty()) {
+                                        ChartSection(uiState)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (uiState.categoryStats.isNotEmpty()) {
+                        items(
+                            items = uiState.categoryStats,
+                            key = { stat -> stat.categoryId ?: "name_${stat.categoryName}" }
+                        ) { stat ->
+                            CategoryStatItem(stat, onClick = { viewModel.selectCategory(stat) })
                         }
                     }
                 }
-            }
-            
-            if (uiState.isLoading) {
-                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                     CircularProgressIndicator()
-                 }
-            } else if (uiState.totalIncome == 0.0 && uiState.totalExpense == 0.0) {
-                 EmptyState(onAddTransaction = onNavigateToAddTransaction)
-            } else {
-                 LazyColumn(
-                     modifier = Modifier.fillMaxSize(),
-                     contentPadding = PaddingValues(16.dp),
-                     verticalArrangement = Arrangement.spacedBy(16.dp)
-                 ) {
-                     item {
-                         SummaryCards(uiState)
-                     }
-                     
-                     if (uiState.selectedMode != StatsMode.NET && uiState.categoryStats.isNotEmpty()) {
-                         item {
-                             ChartSection(uiState)
-                         }
-                     }
-                     
-                     if (uiState.categoryStats.isNotEmpty()) {
-                         item {
-                             Text(
-                                 text = stringResource(R.string.stats_breakdown),
-                                 style = MaterialTheme.typography.titleMedium,
-                                 fontWeight = FontWeight.Bold,
-                                 modifier = Modifier.padding(vertical = 8.dp)
-                             )
-                         }
-                         
-                         items(
-                             items = uiState.categoryStats,
-                             key = { stat -> stat.categoryId ?: "name_${stat.categoryName}" }
-                         ) { stat ->
-                             CategoryStatItem(stat, onClick = { viewModel.selectCategory(stat) })
-                         }
-                     }
-                 }
             }
         }
     }
